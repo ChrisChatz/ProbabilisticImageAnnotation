@@ -1,4 +1,5 @@
 from numpy import genfromtxt
+import numpy as np
 
 def load_data():
     
@@ -18,3 +19,25 @@ def load_data():
     print "wordsTags = %s trainTFIDF = %s testQueriesTextual = %s" %(wordsTags.shape, trainTFIDF.shape, testQueriesTextual.shape)
     
     return trainIDs, testIDs, trainFeatures, testQueries, wordsTags, trainTFIDF, testQueriesTextual
+
+def combineNsortR(a, ida):
+
+    #combine similarity vector with another vector
+    a_ida = np.vstack((a, ida)).T
+    #array to list to sort it easily
+    a_ida_list = a_ida.tolist()
+    a_ida_list = sorted(a_ida_list, reverse=True)
+    a_ida = np.array(a_ida_list)
+    
+    return a_ida
+
+def combineNsortA(a, ida):
+
+    #combine similarity vector with another vector
+    a_ida = np.vstack((a, ida)).T
+    #array to list to sort it easily
+    a_ida_list = a_ida.tolist()
+    a_ida_list = sorted(a_ida_list)
+    a_ida = np.array(a_ida_list)
+    
+    return a_ida
