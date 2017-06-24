@@ -1,25 +1,23 @@
 import math
 import numpy as np
 
-def priorProbabilities(trainIDs, a = 0.1):
+def priorProbabilities(k, a = 0.9):
     
     #calculate prior probabilities p(j) = 1 / (1 + exp(-1/r))
     priorProbList = []
     
-    counter = 0
-    for i in trainIDs :
-        priorProbList.append(( 1 / ( 1 + math.exp( -a / ( counter + 1 )))))
-        counter += 1
+    for i in range(k) :
+        priorProbList.append(( 1 / ( 1 + math.exp( -a / ( i + 1 )))))
         
     priorProbArray = np.array(priorProbList)
-  
+
     return priorProbArray
 
 def wordProbabilities(sorted_trainTFIDF, word, k, T, a = 0.9):
     
     oneWord = sorted_trainTFIDF[:,word]
     wT = np.count_nonzero(oneWord)
-     
+    
     perImage = sorted_trainTFIDF[ : k]
     
     counter=0
@@ -32,12 +30,12 @@ def wordProbabilities(sorted_trainTFIDF, word, k, T, a = 0.9):
             wj = 1
         else:
             wj = 0
-            
+
         counter += 1
-        wordProbList.append(((1 - a) * wj/J) + (a * (float(wT)/T)))
-        
+        wordProbList.append(((1 - a) * (float(wj)/J)) + (a * (float(wT)/T)))
+     
     wordProbArray = np.array(wordProbList)
-                                 
+   
     return wordProbArray
 
 def visualProbabilities(sorted_trainFeatures, k, T, b = 0.9):
@@ -55,10 +53,9 @@ def visualProbabilities(sorted_trainFeatures, k, T, b = 0.9):
             J = np.count_nonzero(i)
             vj = oneFeature[counter]
             counter += 1
-            visualProbList.append(((1 - b) * vj/J) + (b * (float(vT)/T)))
+            visualProbList.append(((1 - b) * (float(vj)/J)) + (b * (float(vT)/T)))
             
         visualAllLists.append(visualProbList)
-    
     
     visualProbArray = np.array(visualAllLists)
                                  
@@ -66,11 +63,15 @@ def visualProbabilities(sorted_trainFeatures, k, T, b = 0.9):
     
 def FJ(prior, word, virtual):
     
-    logprior = np.log(prior)
+    logprior = np.log(prior + (10**-10))
+#    print "prior:%f" %logprior
     logword = np.log(word + (10**-10))
+#    print "word:%f" %logword
     logvirtual = np.log(virtual + (10**-10))
     sumlogvirtual = np.sum(logvirtual, axis = 1)
+#    print "virual:%f" %sumlogvirtual
     
     f = logprior + logword + sumlogvirtual
+#    print f
     
     return f
