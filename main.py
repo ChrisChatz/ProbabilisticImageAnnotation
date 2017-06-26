@@ -29,8 +29,7 @@ for i in range(q):
     #combine similarity vector with trainIDs vector and sort
     similarity_ID = combineNsortR(similarity, trainIDs)
     sorted_trainIDs = similarity_ID[:,1]
-    
-    
+      
     print "Retrieval is over."
     print "---------------------------------------------------------------------"
     
@@ -38,18 +37,20 @@ for i in range(q):
     print "Step 2: Calculate fj , j = 1 ,..., |T| ...\n"
     
     pProb = priorProbabilities(k)
+    print "Prior Probabilities calculated"
     
     #combine similarity vector with trainTFIDF array and sort
     similarity_trainTFIDF = combineNsortR(similarity, trainTFIDF.T)
     #delete first column
     similarity_trainTFIDF = np.delete(similarity_trainTFIDF, (0), axis=1)
     #combine similarity vector with trainFeatures array and sort
-    similarity_trainFeatures = combineNsortR(similarity, trainFeatures.T) 
+    similarity_trainFeatures = combineNsortR(similarity, trainFeatures.T)
     #delete first column
     similarity_trainFeatures = np.delete(similarity_trainFeatures, (0), axis=1)
     T = len(trainIDs)
     
     vProb = visualProbabilities(similarity_trainFeatures, k, T)
+    print "Visual Probabilities calculated"
     
     fjList = []
     for j in range(len(wordsTags)):
@@ -94,10 +95,11 @@ for i in range(q):
     
     finalPredsArray = combineNsortA(finalPredsVector,wordsTags)
     finalQueryArray = combineNsortR(testQueriesTextual[i],wordsTags)
-     
+   
     predsTags = finalPredsArray[:w,1]
     realTags = finalQueryArray[:4,1]
-  
+    print predsTags
+    print realTags
     tp = 0
     fp = 0
     for i in predsTags:
@@ -116,8 +118,10 @@ for i in range(q):
     
     recall = float(tp) / (tp + fn)
     print "Recall = %f" %recall
-    
-    F1 = 2 * (precision * recall) / (precision + recall)
+    if precision == 0 and recall == 0:
+        F1 = 0
+    else:
+        F1 = 2 * (precision * recall) / (precision + recall)
     print "F1 = %f" %F1
     
     AllF1 += F1

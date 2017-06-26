@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-def priorProbabilities(k, a = 0.9):
+def priorProbabilities(k, a = 0.2):
     
     #calculate prior probabilities p(j) = 1 / (1 + exp(-1/r))
     priorProbList = []
@@ -13,52 +13,45 @@ def priorProbabilities(k, a = 0.9):
 
     return priorProbArray
 
-def wordProbabilities(sorted_trainTFIDF, word, k, T, a = 0.9):
+def wordProbabilities(sorted_trainTFIDF, word, k, T, a = 0.2):
     
     oneWord = sorted_trainTFIDF[:,word]
     wT = np.count_nonzero(oneWord)
-    
     perImage = sorted_trainTFIDF[ : k]
     
-    counter=0
     wordProbList = []
     
     for i in perImage :
         J = np.count_nonzero(i)
-
-        if oneWord[counter] != 0 :
+        if i[word] != 0 :
             wj = 1
         else:
             wj = 0
-
-        counter += 1
         wordProbList.append(((1 - a) * (float(wj)/J)) + (a * (float(wT)/T)))
-     
+       
     wordProbArray = np.array(wordProbList)
-   
+
     return wordProbArray
 
-def visualProbabilities(sorted_trainFeatures, k, T, b = 0.9):
+def visualProbabilities(sorted_trainFeatures, k, T, b = 0.2):
     
     visualAllLists = []
+    
     for j in range(np.shape(sorted_trainFeatures)[1]):
         oneFeature = sorted_trainFeatures[ :, j]
         vT = np.count_nonzero(oneFeature)
-        perImage = sorted_trainFeatures[ : k]
         
-        counter=0
+        perImage = sorted_trainFeatures[ : k]
         visualProbList = []
         
         for i in perImage :
             J = np.count_nonzero(i)
-            vj = oneFeature[counter]
-            counter += 1
+            vj = i[j]
             visualProbList.append(((1 - b) * (float(vj)/J)) + (b * (float(vT)/T)))
-            
+                
         visualAllLists.append(visualProbList)
     
-    visualProbArray = np.array(visualAllLists)
-                                 
+    visualProbArray = np.array(visualAllLists)                         
     return visualProbArray.T
     
 def FJ(prior, word, virtual):
