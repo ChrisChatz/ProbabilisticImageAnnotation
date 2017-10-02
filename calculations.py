@@ -12,118 +12,121 @@ def cosineSimilarity(query, trainF):
     
     return similarity
     
-def sigmoid(x):
+def priorProbabilities(k, a = 0.3):
     
-    #numerically-stable sigmoid function
-    return math.exp(-np.logaddexp(0, -x))
-
-def priorProbabilities(k, a = 0.05):
-    
-    #calculate prior probabilities p(j) = 1 / (1 + exp(-1/r))
+    #calculate prior probabilities p(j) = 1 / (1 + exp(a*r))
     priorProbList = []
     
     for i in range(k) :
-        priorProbList.append(sigmoid(a/(i+1)))
+        priorProbList.append(1/(1+math.exp(a*(i+1))))
         
     priorProbArray = np.array(priorProbList)
 
     return priorProbArray
 
-def wordProbabilities(sorted_trainTFIDF, word, k, T, a = 0.1):
+def wordProbabilities(sorted_trainTFIDF, a = 0.1):
     
-    oneWord = sorted_trainTFIDF[:,word]
-    wT = np.count_nonzero(oneWord)
-    perImage = sorted_trainTFIDF[ : k]
+    epsilon = 1e-4
+    #total sum of similarity_trainTFIDF
+    totalSumWords = np.count_nonzero(sorted_trainTFIDF)
+    #sum of every column of similarity_trainTFIDF
+    columnSumWords = np.count_nonzero(sorted_trainTFIDF, axis = 0)
+    #division of every column with total sum
+    columnDivTotalWords = np.divide(columnSumWords, float(totalSumWords))
+    #sum of every row of image
+    rowSumWords = np.count_nonzero(sorted_trainTFIDF, axis = 1)
+    #division of every cell of similarity_trainTFIDF with rowSumWords
+    wordDivRowSum = np.divide(sorted_trainTFIDF ,(rowSumWords[:, None] + epsilon))
     
-    wordProbList = []
-    
-    for i in perImage :
-        J = np.count_nonzero(i)
-        if i[word] != 0 :
-            wj = 1
-        else:
-            wj = 0
-        wordProbList.append(((1 - a) * (float(wj)/J)) + (a * (float(wT)/T)))
-       
-    wordProbArray = np.array(wordProbList)
+    wordProbArray = ((1-a)*wordDivRowSum) + (a*columnDivTotalWords)
     
     return wordProbArray
 
-def visualProbabilities(sorted_trainFeatures, k, T, b = 0.9):
+def visualProbabilities(sorted_trainFeatures, b = 0.9):
     
-    visualAllLists = []
-    for j in range(np.shape(sorted_trainFeatures)[1]):
-        
-        oneFeature = sorted_trainFeatures[ :, j]
-        vT = np.count_nonzero(oneFeature)
-        perImage = sorted_trainFeatures[ : k]
-        visualProbList = []
-        
-        for i in perImage :
-            J = np.count_nonzero(i)
-            vj = i[j]
-            visualProbList.append(((1 - b) * (float(vj)/J)) + (b * (float(vT)/T)))
-                
-        visualAllLists.append(visualProbList)
+    #total sum of similarity_trainFeatures
+    totalSumFeatures = np.sum(sorted_trainFeatures)
+    #sum of every column of similarity_trainFeatures
+    columnSumFeatures = sorted_trainFeatures.sum(axis = 0)
+    #division of every column with total sum
+    columnDivTotalFeatures = np.divide(columnSumFeatures, totalSumFeatures)
+    #sum of every row of image
+    rowSumFeatures = sorted_trainFeatures.sum(axis = 1)
+    #division of every cell of sorted_trainFeatures with rowSumFeatures
+    visualDivRowSum = np.divide(sorted_trainFeatures, rowSumFeatures[:, None])
     
-    visualProbArray = np.array(visualAllLists)                       
-    return visualProbArray.T
+    visualProbArray = ((1-b)*visualDivRowSum) + (b*columnDivTotalFeatures)
     
-def FJ(prior, word, virtual):
+    return visualProbArray
     
-    logprior = np.log(prior + (10**-10)) 
-#    print logprior.shape
+def FJ(prior, word, visual, length):
+    
+    logprior = np.log(prior + (10**-10))
+   
     logword = np.log(word + (10**-10))
-#    print logword.shape
-    logvirtual = np.log(virtual + (10**-10))
-#    print logvirtual.shape
-    sumlogvirtual = np.sum(logvirtual, axis = 1) 
-#    print sumlogvirtual.shape
-    f = logprior + logword + sumlogvirtual
-#    print f.shape
-#    print "--------"
-  
+    
+    logvisual = np.log(visual + (10**-10))
+    
+    sumlogvisual = np.sum(logvisual, axis = 1)
+    
+    temp = logprior + sumlogvisual
+    temp1 = temp [:, None]
+    for i in range(length-1):
+        temp1 = np.concatenate((temp1,temp[:,None]), axis = 1)
+    
+    f = temp1 + logword
+    
     return f
 
-def precisionRecall(queries,tags):
+def evaluationResults(queries, preds, tags):
     
-    precisionRecallList = []
+    precisionRecallF1List = []
+    N = 0
     for word in tags:
         tp = 0
         fp = 0
-        gs = 0
+        fn = 0
+        
+        counter = 0
         for query in queries:
-            if word in query["predictions"] and word in query["realTags"]:
+            if word in preds[counter] and word in query["realTags"]:
                 tp += 1
-            elif word in query["predictions"] and word not in query["realTags"]:
+            elif word in preds[counter] and word not in query["realTags"]:
                 fp += 1
                 
-            if word in query["predictions"]:
-                gs += 1
+            if word not in preds[counter] and word in query["realTags"]:
+                fn += 1
+                
+            counter += 1
         
-        if gs == 0:
+        if tp != 0:
+            N += 1
+            
+        if tp + fn == 0:
             recall = 0
         else:
-            recall = float(tp) / gs
+            recall = float(tp) / (tp+fn)
                           
         if tp + fp == 0:
             precision = 0
         else:
             precision = float(tp) / (tp+fp)
+        
             
-        precisionRecallList.append((recall,precision))
-
-    return precisionRecallList
-
-def f1Calc(preRecList):
+        precisionRecallF1List.append((recall,precision,f1Calc(recall, precision)))
     
-    f1List = []
-    for pre, rec in preRecList:
-        if pre == 0 and rec == 0:
-            F1 = 0
-        else:
-            F1 = 2 * (pre * rec) / (pre + rec)
+    precisionRecallF1Array = np.array(precisionRecallF1List)
+
+    avgRec = np.mean(precisionRecallF1Array[:, :1])
+    avgPre = np.mean(precisionRecallF1Array[:, 1:2])
+    avgF1 =  np.mean(precisionRecallF1Array[:, :-1])
+    return N, avgPre, avgRec, avgF1
+
+def f1Calc(rec, pre):
+    
+    if pre == 0 and rec == 0:
+        F1 = 0
+    else:
+        F1 = 2 * (pre * rec) / (pre + rec)
         
-        f1List.append(F1)
-        
-    return f1List
+    return F1

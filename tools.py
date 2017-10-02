@@ -30,22 +30,33 @@ def load_data():
     return StrainIDs, StestIDs, StrainFeatures, StestQueries, GtrainIDs, GtestIDs, GtrainFeatures, GtestQueries, wordsTags, trainTFIDF, testQueriesTextual
 
 
-def write_data(queries, F1, wordsTags, nameOfExp):
-    
-    for query in queries:
+def write_data(queries, wordsTags, nameOfExp):
         
-        with open(nameOfExp+'_Results/'+str(int(query['ID']))+'.csv', 'w') as csvfile:
-            fieldnames = ['QIDs', 'Fixed', 'termID', 'Rank', 'Score', 'Name_of_experiment']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            
+    with open(nameOfExp+'_Results.csv', 'w') as csvfile:
+        fieldnames = ['QIDs', 'Fixed', 'termID', 'Rank', 'Score', 'Name_of_experiment']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for query in queries:
             rank = 1
+            i = 0
             for word in query['predictions']:
                 termID = np.where(wordsTags == word)[0]
-                score = F1[int(termID)]
-                writer.writerow({'QIDs': int(query['ID']), 'Fixed': 1, 'termID': int(termID), 'Rank': rank, 'Score': score, 'Name_of_experiment': nameOfExp})
+                score = query['score'][i]
+                i += 1
+                writer.writerow({'QIDs': int(query['ID']), 'Fixed': 1, 'termID': int(termID), 'Rank': rank, 'Score': float(score), 'Name_of_experiment': nameOfExp})
                 rank += 1
+
+def readCsv(filename):
     
+    res = []
+    
+    with open(filename+'.csv') as csvfile:
+        results = csv.reader(csvfile, delimiter=',')
+        for row in results:
+            res.append(row)
+       
+    return res
+
 def combineNsortR(a, ida):
 
     #combine similarity vector with another vector
